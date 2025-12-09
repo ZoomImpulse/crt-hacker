@@ -8,7 +8,16 @@ import { StatusBar } from './components/StatusBar';
 import { useWebSocket } from './hooks/useWebSocket';
 import './styles/App.css';
 
-const WS_URL = 'ws://localhost:8000/ws/game';
+// Construct WebSocket URL based on current location
+// This handles both localhost and GitHub Codespaces environments
+const getWebSocketURL = (): string => {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = window.location.host;
+  // Use the same host as the frontend
+  return `${protocol}//${host}/ws/game`;
+};
+
+const WS_URL = getWebSocketURL();
 
 function App() {
   const { connected, gameState, messages, sendCommand, clearMessages } = useWebSocket(WS_URL);
@@ -41,15 +50,39 @@ function App() {
         <div className="app-subtitle">TERMINAL ACCESS SYSTEM v1.0</div>
       </div>
       
-      <StatusBar gameState={gameState} connected={connected} />
-      
-      <div className="terminal-wrapper">
-        <Terminal
-          messages={messages}
-          prompt={gameState.prompt}
-          onCommand={sendCommand}
-          onClear={handleClear}
-        />
+      <div className="app-main">
+        {/* Task Box */}
+        <div className="task-box">
+          <div className="task-box-title">[ CURRENT MISSION ]</div>
+          <div className="task-box-content">
+            <div className="task-box-item">
+              • Scan local network
+            </div>
+            <div className="task-box-item">
+              • Find target host
+            </div>
+            <div className="task-box-item">
+              • Exploit vulnerability
+            </div>
+            <div className="task-box-item">
+              • Capture flag
+            </div>
+          </div>
+        </div>
+        
+        {/* Terminal Section */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="terminal-wrapper">
+            <Terminal
+              messages={messages}
+              prompt={gameState.prompt}
+              onCommand={sendCommand}
+              onClear={handleClear}
+            />
+          </div>
+          
+          <StatusBar gameState={gameState} connected={connected} />
+        </div>
       </div>
     </div>
   );

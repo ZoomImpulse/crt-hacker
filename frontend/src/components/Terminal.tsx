@@ -5,6 +5,7 @@
 
 import React, { useEffect, useRef, useState, KeyboardEvent } from 'react';
 import { MessageType, WSMessage, OutputMessage } from '../types/protocol';
+import { getAutocompleteSuggestions } from '../services/autocomplete';
 import '../styles/Terminal.css';
 
 interface TerminalProps {
@@ -18,15 +19,18 @@ export const Terminal: React.FC<TerminalProps> = ({ messages, prompt, onCommand,
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [cursorPos, setCursorPos] = useState(0);
   const outputRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cursorRefRef = useRef<HTMLSpanElement>(null);
 
   // Auto-scroll to bottom
   useEffect(() => {
     if (outputRef.current) {
       outputRef.current.scrollTop = outputRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, input]);
 
   // Focus input on mount
   useEffect(() => {
@@ -47,7 +51,7 @@ export const Terminal: React.FC<TerminalProps> = ({ messages, prompt, onCommand,
       return;
     }
 
-    // Send command
+    // Send command to server
     onCommand(input);
     setInput('');
   };
@@ -74,7 +78,16 @@ export const Terminal: React.FC<TerminalProps> = ({ messages, prompt, onCommand,
       }
     } else if (e.key === 'Tab') {
       e.preventDefault();
-      // TODO: Implement tab completion
+      const result = getAutocompleteSuggestions(input);
+      
+      if (result.completed && result.completed !== input) {
+        // There's a completion to apply
+        setInput(result.completed);
+        setSuggestions([]);
+      } else if (result.suggestions.length > 0) {
+        // Show suggestions
+        setSuggestions(result.suggestions);
+      }
     } else if (e.key === 'l' && e.ctrlKey) {
       e.preventDefault();
       onClear?.();
@@ -89,6 +102,16 @@ export const Terminal: React.FC<TerminalProps> = ({ messages, prompt, onCommand,
         return (
           <div key={index} className={className}>
             {output.text}
+          </div>
+        );
+      }
+      case MessageType.INPUT: {
+        // Show previously entered commands
+        const inputLine = message.payload;
+        return (
+          <div key={index} className="terminal-input-history">
+            <span className="terminal-prompt">{inputLine.prompt}</span>
+            <span className="terminal-command-text">{inputLine.command}</span>
           </div>
         );
       }
@@ -119,23 +142,65 @@ export const Terminal: React.FC<TerminalProps> = ({ messages, prompt, onCommand,
       <div className="terminal-content">
         <div className="terminal-output" ref={outputRef}>
           {messages.map((msg, idx) => renderMessage(msg, idx))}
-        </div>
-        
-        <div className="terminal-input-line">
-          <span className="terminal-prompt">{prompt}</span>
-          <input
-            ref={inputRef}
-            type="text"
-            className="terminal-input"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            spellCheck={false}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-          />
-          <span className="terminal-cursor">█</span>
+          
+          {/* Current input line shows in output */}
+          <div className="terminal-input-line">
+            <span className="terminal-prompt">{prompt}</span>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <input
+                ref={inputRef}
+                type="text"
+                className="terminal-input"
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  setCursorPos(e.currentTarget.selectionStart || 0);
+                  setSuggestions([]);
+                }}
+                onKeyDown={handleKeyDown}
+                onKeyUp={(e) => setCursorPos(e.currentTarget.selectionStart || 0)}
+                onClick={(e) => setCursorPos(e.currentTarget.selectionStart || 0)}
+                spellCheck={false}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+              />
+              {/* Cursor Positionierungshilfe */}
+              <span 
+                ref={cursorRefRef}
+                style={{ 
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  visibility: 'hidden',
+                  whiteSpace: 'pre',
+                  fontFamily: 'inherit',
+                  fontSize: 'inherit',
+                  letterSpacing: 'inherit'
+                }}
+              >
+                {input.substring(0, cursorPos)}
+              </span>
+              <span
+                className="terminal-cursor"
+                style={{
+                  left: cursorRefRef.current ? `${cursorRefRef.current.offsetWidth}px` : '0px'
+                }}
+              >
+                █
+              </span>
+            </div>
+          </div>
+          
+          {suggestions.length > 0 && (
+            <div className="terminal-suggestions">
+              {suggestions.map((suggestion, idx) => (
+                <div key={idx} className="suggestion-item">
+                  {suggestion}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

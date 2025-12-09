@@ -14,7 +14,8 @@ export enum MessageType {
   ERROR = 'error',
   STATE_UPDATE = 'state_update',
   PROMPT = 'prompt',
-  SYSTEM = 'system'
+  SYSTEM = 'system',
+  INPUT = 'input'
 }
 
 export interface WSMessage {

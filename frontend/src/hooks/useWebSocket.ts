@@ -73,6 +73,18 @@ export function useWebSocket(url: string) {
 
   const sendCommand = (command: string) => {
     if (wsRef.current) {
+      // Add command to messages history
+      const inputMessage: WSMessage = {
+        type: MessageType.INPUT,
+        payload: {
+          prompt: gameState.prompt,
+          command: command
+        },
+        timestamp: Date.now()
+      };
+      setMessages(prev => [...prev, inputMessage]);
+      
+      // Send command to server
       wsRef.current.sendCommand(command);
     }
   };

@@ -1,6 +1,7 @@
 /**
  * Terminal Component Styles
  * CRT aesthetic with green monospace text, scanlines, and glow
+ * Simulates authentic CRT monitor with 4:3 aspect ratio and low resolution
  */
 
 .terminal-container {
@@ -14,10 +15,31 @@
   cursor: text;
   box-shadow: 
     0 0 40px rgba(0, 255, 0, 0.2),
-    inset 0 0 100px rgba(0, 0, 0, 0.5);
+    inset 0 0 100px rgba(0, 0, 0, 0.5),
+    inset -2px -2px 5px rgba(0, 0, 0, 0.8),
+    inset 2px 2px 5px rgba(0, 255, 0, 0.1);
+  /* CRT Monitor Wölbung */
+  perspective: 1200px;
+  transform-style: preserve-3d;
 }
 
-/* CRT Curvature Effect */
+/* CRT Monitor Wölbung - äußerer Rahmen */
+.terminal-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(ellipse 200% 150% at 50% 0%, rgba(100, 100, 100, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse 200% 150% at 50% 100%, rgba(0, 0, 0, 0.4) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 4;
+  border-radius: 8px;
+}
+
+/* CRT Wölbungs-Effekt - Haupteffekt */
 .terminal-container::before {
   content: '';
   position: absolute;
@@ -25,7 +47,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.7) 100%);
+  background: 
+    radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.7) 100%);
   pointer-events: none;
   z-index: 3;
 }
@@ -50,7 +73,7 @@
   animation: flicker 0.15s infinite;
 }
 
-/* Scanlines */
+/* Verbesserte Scanlines - Simuliert 640x480 oder ähnliche CRT-Auflösung */
 .scanlines {
   position: absolute;
   top: 0;
@@ -59,14 +82,35 @@
   bottom: 0;
   background: repeating-linear-gradient(
     0deg,
-    rgba(0, 255, 0, 0.03),
-    rgba(0, 255, 0, 0.03) 1px,
-    transparent 1px,
-    transparent 3px
+    rgba(0, 255, 0, 0.08),
+    rgba(0, 255, 0, 0.08) 2px,
+    transparent 2px,
+    transparent 4px
   );
   pointer-events: none;
   z-index: 2;
   animation: scroll 10s linear infinite;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Horizontale Pixelierungslinien - Simuliert CRT-Pixel */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(0, 255, 0, 0.04),
+    rgba(0, 255, 0, 0.04) 3px,
+    transparent 3px,
+    transparent 6px
+  );
+  pointer-events: none;
+  z-index: 2;
 }
 
 @keyframes scroll {
@@ -89,6 +133,15 @@
   flex-direction: column;
   color: #00ff00;
   text-shadow: 0 0 5px #00ff00;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: none;
+  /* Gewölbte Perspektive */
+  transform: perspective(1200px) rotateX(0.5deg);
+  transform-style: preserve-3d;
+  /* CRT-Auflösung simulieren - Großer Zeichensatz für 80x24 Terminal */
+  font-size: clamp(12px, 1.2vw, 16px);
+  line-height: 1.4;
 }
 
 .terminal-output {
@@ -97,9 +150,16 @@
   overflow-x: hidden;
   white-space: pre-wrap;
   word-wrap: break-word;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: inherit;
+  line-height: inherit;
   padding-bottom: 10px;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  /* Gewölbte Perspektive für Output */
+  transform: perspective(1200px) scaleY(0.97);
+  /* CRT-Charakter Spacing */
+  letter-spacing: 0.05em;
+  font-variant-numeric: monospace-nums;
 }
 
 /* Custom scrollbar */
@@ -160,19 +220,58 @@
   text-shadow: 0 0 10px #00ff00;
 }
 
+/* Previously entered commands in history */
+.terminal-input-history {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: inherit;
+  position: relative;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  letter-spacing: 0.05em;
+  color: #00ff00;
+  text-shadow: 0 0 5px #00ff00;
+}
+
+.terminal-input-history .terminal-prompt {
+  color: #00ff00;
+  text-shadow: 0 0 5px #00ff00;
+  margin-right: 0;
+  white-space: nowrap;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.terminal-input-history .terminal-command-text {
+  color: #00ff00;
+  text-shadow: 0 0 5px #00ff00;
+  margin-left: 0;
+  flex: 1;
+}
+
 .terminal-input-line {
   display: flex;
   align-items: center;
-  margin-top: 10px;
-  font-size: 14px;
+  margin-top: 0;
+  font-size: inherit;
+  flex-shrink: 0;
+  position: relative;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  /* Gewölbte Perspektive für Input */
+  transform: perspective(1200px) scaleY(0.95);
+  /* CRT-Charakter Spacing */
+  letter-spacing: 0.05em;
 }
 
 .terminal-prompt {
   color: #00ff00;
   text-shadow: 0 0 5px #00ff00;
-  margin-right: 8px;
+  margin-right: 0;
   white-space: nowrap;
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 .terminal-input {
@@ -185,15 +284,69 @@
   font-family: inherit;
   font-size: inherit;
   caret-color: transparent;
+  padding: 0;
+  margin: 0;
+  letter-spacing: 0.05em;
+  -webkit-font-smoothing: none;
 }
 
 .terminal-cursor {
+  position: absolute;
+  top: 0;
   color: #00ff00;
   animation: blink 1s step-end infinite;
-  margin-left: 2px;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 10;
+  line-height: 1;
+  letter-spacing: 0;
+  width: 8px;
+  text-align: center;
+  text-shadow: 0 0 10px #00ff00, 0 0 20px rgba(0, 255, 0, 0.5);
 }
 
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+  0%, 50% { 
+    opacity: 1;
+    text-shadow: 0 0 10px #00ff00, 0 0 20px rgba(0, 255, 0, 0.8);
+  }
+  51%, 100% { 
+    opacity: 0;
+  }
+}
+
+/* Autocomplete suggestions */
+.terminal-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 5px;
+  padding: 8px;
+  background: rgba(0, 30, 0, 0.4);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  border-radius: 4px;
+  max-height: 80px;
+  overflow-y: auto;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+
+.suggestion-item {
+  background: rgba(0, 255, 0, 0.1);
+  border: 1px solid rgba(0, 255, 0, 0.5);
+  border-radius: 3px;
+  padding: 4px 8px;
+  color: #00ff00;
+  text-shadow: 0 0 3px #00ff00;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: default;
+  transition: all 0.2s ease;
+}
+
+.suggestion-item:hover {
+  background: rgba(0, 255, 0, 0.2);
+  border-color: rgba(0, 255, 0, 0.8);
+  text-shadow: 0 0 8px #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
 }
