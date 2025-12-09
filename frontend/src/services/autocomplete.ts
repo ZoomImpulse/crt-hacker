@@ -1,6 +1,7 @@
 /**
  * Autocomplete Service
  * Handles command and path completion
+ * Classic TAB autocomplete - directly completes input
  */
 
 // Available game commands
@@ -20,11 +21,13 @@ const AVAILABLE_COMMANDS = [
 
 export interface AutocompleteResult {
   completed: string;
-  suggestions: string[];
+  hasMultipleMatches: boolean;
+  matches?: string[];
 }
 
 /**
- * Get autocomplete suggestions based on input
+ * Get autocomplete completion based on input
+ * Returns the completed text and whether there are multiple matches
  */
 export function getAutocompleteSuggestions(input: string): AutocompleteResult {
   const trimmed = input.trim();
@@ -49,53 +52,60 @@ function autocompleteCommand(partial: string): AutocompleteResult {
   );
   
   if (matches.length === 0) {
-    return { completed: partial, suggestions: [] };
+    return { completed: partial, hasMultipleMatches: false };
   }
   
   if (matches.length === 1) {
-    return { completed: matches[0] + ' ', suggestions: [] };
+    // Single match - complete with space
+    return { completed: matches[0] + ' ', hasMultipleMatches: false };
   }
   
-  // Find common prefix
+  // Multiple matches - complete to common prefix
   const commonPrefix = findCommonPrefix(matches);
   return {
     completed: commonPrefix,
-    suggestions: matches
+    hasMultipleMatches: true,
+    matches: matches
   };
 }
 
 /**
  * Autocomplete argument (basic)
- * For now, just suggests paths for cd and cat commands
+ * For now, just auto-completes paths for cd and cat commands
  */
 function autocompleteArgument(command: string, partial: string): AutocompleteResult {
   // Commands that take path arguments
   const pathCommands = ['cd', 'cat', 'ls'];
   
   if (!pathCommands.includes(command)) {
-    return { completed: partial, suggestions: [] };
+    return { completed: partial, hasMultipleMatches: false };
   }
   
   // Parse path
   const lastSlash = partial.lastIndexOf('/');
   const dir = lastSlash >= 0 ? partial.substring(0, lastSlash) || '/' : '';
-  const partialName = lastSlash >= 0 ? partial.substring(lastSlash + 1) : partial;
   
   // Common directories
-  const commonPaths = ['/', '/home/', '/home/user/', '../', './'];
-  const suggestions = commonPaths
-    .filter(path => path.startsWith(dir === '' ? '.' : dir))
-    .map(path => dir === '' && path === './' ? path : path);
+  const commonPaths = ['/home/user/', '/home/', '/', '../', './'];
+  const matches = commonPaths
+    .filter(path => path.startsWith(partial === '' ? '.' : dir))
+    .filter(path => path !== partial); // Exclude exact matches
   
-  if (suggestions.length === 0) {
-    return { completed: partial, suggestions: [] };
+  if (matches.length === 0) {
+    return { completed: partial, hasMultipleMatches: false };
   }
   
-  if (suggestions.length === 1) {
-    return { completed: suggestions[0], suggestions: [] };
+  if (matches.length === 1) {
+    return { completed: matches[0], hasMultipleMatches: false };
   }
   
-  return { completed: dir, suggestions };
+  // Find common prefix of matches
+  const commonPrefix = findCommonPrefix(matches);
+  return {
+    completed: commonPrefix,
+    hasMultipleMatches: true,
+    matches: matches
+  };
 }
 
 /**

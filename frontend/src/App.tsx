@@ -72,6 +72,8 @@ function App() {
         
         {/* Terminal Section */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <StatusBar gameState={gameState} connected={connected} />
+          
           <div className="terminal-wrapper">
             <Terminal
               messages={messages}
@@ -80,8 +82,6 @@ function App() {
               onClear={handleClear}
             />
           </div>
-          
-          <StatusBar gameState={gameState} connected={connected} />
         </div>
       </div>
     </div>

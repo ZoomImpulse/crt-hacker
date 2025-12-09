@@ -66,18 +66,18 @@ class GameEngine:
         result = await self.dispatcher.dispatch(command, args, world)
         
         # Auto-save after each command
-        await self._save_world(session_id, world)
+        self._save_world(session_id, world)
         
         return result
     
-    async def _save_world(self, session_id: str, world: GameWorld):
+    def _save_world(self, session_id: str, world: GameWorld):
         """Persist game world state"""
         world_json = world.model_dump_json()
-        await save_game_state(session_id, world_json)
+        save_game_state(session_id, world_json)
     
-    async def load_session(self, session_id: str) -> bool:
+    def load_session(self, session_id: str) -> bool:
         """Load a saved session"""
-        world_json = await load_game_state(session_id)
+        world_json = load_game_state(session_id)
         if world_json:
             world = GameWorld.model_validate_json(world_json)
             self.worlds[session_id] = world

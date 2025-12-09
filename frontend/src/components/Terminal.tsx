@@ -21,6 +21,7 @@ export const Terminal: React.FC<TerminalProps> = ({ messages, prompt, onCommand,
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [cursorPos, setCursorPos] = useState(0);
+  const [isActive, setIsActive] = useState(true);
   const outputRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const cursorRefRef = useRef<HTMLSpanElement>(null);
@@ -64,33 +65,89 @@ export const Terminal: React.FC<TerminalProps> = ({ messages, prompt, onCommand,
       if (history.length > 0) {
         const newIndex = historyIndex < history.length - 1 ? historyIndex + 1 : historyIndex;
         setHistoryIndex(newIndex);
-        setInput(history[history.length - 1 - newIndex]);
+        const newInput = history[history.length - 1 - newIndex];
+        setInput(newInput);
+        // Move cursor to end
+        setTimeout(() => setCursorPos(newInput.length), 0);
       }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (historyIndex > 0) {
         const newIndex = historyIndex - 1;
         setHistoryIndex(newIndex);
-        setInput(history[history.length - 1 - newIndex]);
+        const newInput = history[history.length - 1 - newIndex];
+        setInput(newInput);
+        // Move cursor to end
+        setTimeout(() => setCursorPos(newInput.length), 0);
       } else {
         setHistoryIndex(-1);
         setInput('');
+        setCursorPos(0);
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setCursorPos(Math.max(0, cursorPos - 1));
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.setSelectionRange(cursorPos - 1, cursorPos - 1);
+        }
+      }, 0);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      setCursorPos(Math.min(input.length, cursorPos + 1));
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.setSelectionRange(cursorPos + 1, cursorPos + 1);
+        }
+      }, 0);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setCursorPos(0);
+      if (inputRef.current) {
+        inputRef.current.setSelectionRange(0, 0);
+      }
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setCursorPos(input.length);
+      if (inputRef.current) {
+        inputRef.current.setSelectionRange(input.length, input.length);
       }
     } else if (e.key === 'Tab') {
       e.preventDefault();
       const result = getAutocompleteSuggestions(input);
       
+      // Always apply the completion directly (classic TAB behavior)
       if (result.completed && result.completed !== input) {
-        // There's a completion to apply
         setInput(result.completed);
+        // Set cursor to end of input
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.setSelectionRange(result.completed.length, result.completed.length);
+          }
+        }, 0);
+      }
+      
+      // Only show suggestions if there are multiple matches and we're at the common prefix
+      if (result.hasMultipleMatches && result.matches) {
+        setSuggestions(result.matches);
+      } else {
         setSuggestions([]);
-      } else if (result.suggestions.length > 0) {
-        // Show suggestions
-        setSuggestions(result.suggestions);
       }
     } else if (e.key === 'l' && e.ctrlKey) {
       e.preventDefault();
       onClear?.();
+    } else if (e.key === 'Backspace') {
+      // Let the browser handle backspace, just update cursorPos after
+      setTimeout(() => {
+        const newPos = inputRef.current?.selectionStart || 0;
+        setCursorPos(newPos);
+      }, 0);
+    } else if (e.key === 'Delete') {
+      // Let the browser handle delete, just update cursorPos after
+      setTimeout(() => {
+        const newPos = inputRef.current?.selectionStart || 0;
+        setCursorPos(newPos);
+      }, 0);
     }
   };
 
@@ -154,11 +211,12 @@ export const Terminal: React.FC<TerminalProps> = ({ messages, prompt, onCommand,
                 value={input}
                 onChange={(e) => {
                   setInput(e.target.value);
-                  setCursorPos(e.currentTarget.selectionStart || 0);
+                  // Update cursor position on every keystroke
+                  const newPos = e.currentTarget.selectionStart || 0;
+                  setCursorPos(newPos);
                   setSuggestions([]);
                 }}
                 onKeyDown={handleKeyDown}
-                onKeyUp={(e) => setCursorPos(e.currentTarget.selectionStart || 0)}
                 onClick={(e) => setCursorPos(e.currentTarget.selectionStart || 0)}
                 spellCheck={false}
                 autoComplete="off"
@@ -173,10 +231,11 @@ export const Terminal: React.FC<TerminalProps> = ({ messages, prompt, onCommand,
                   top: 0,
                   left: 0,
                   visibility: 'hidden',
-                  whiteSpace: 'pre',
+                  whiteSpace: 'pre-wrap',
                   fontFamily: 'inherit',
                   fontSize: 'inherit',
-                  letterSpacing: 'inherit'
+                  letterSpacing: 'inherit',
+                  fontWeight: 'inherit'
                 }}
               >
                 {input.substring(0, cursorPos)}
@@ -191,16 +250,6 @@ export const Terminal: React.FC<TerminalProps> = ({ messages, prompt, onCommand,
               </span>
             </div>
           </div>
-          
-          {suggestions.length > 0 && (
-            <div className="terminal-suggestions">
-              {suggestions.map((suggestion, idx) => (
-                <div key={idx} className="suggestion-item">
-                  {suggestion}
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

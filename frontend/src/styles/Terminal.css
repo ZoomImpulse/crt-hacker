@@ -305,6 +305,17 @@
   text-shadow: 0 0 10px #00ff00, 0 0 20px rgba(0, 255, 0, 0.5);
 }
 
+.terminal-input:focus ~ .terminal-cursor {
+  animation: solid-cursor 0.3s infinite;
+}
+
+@keyframes solid-cursor {
+  0%, 100% { 
+    opacity: 1;
+    text-shadow: 0 0 10px #00ff00, 0 0 20px rgba(0, 255, 0, 0.8);
+  }
+}
+
 @keyframes blink {
   0%, 50% { 
     opacity: 1;
